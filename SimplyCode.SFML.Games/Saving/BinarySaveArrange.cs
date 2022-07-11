@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace SimplyCode.SFML.Games.Saving
@@ -12,7 +13,7 @@ namespace SimplyCode.SFML.Games.Saving
         private IEnumerable<string> mFiles;
 
         private static string Prefix = "save_";
-        private static string Extension = ".pzl1";
+        private static string Extension = ".data1";
 
         private FileRotater(string currNumber, IEnumerable<string> files)
         {
@@ -51,9 +52,8 @@ namespace SimplyCode.SFML.Games.Saving
     public class BinarySaveArrange : ISaveArrange, ILoadArrange
     {
         private IDictionary<string, IEntitySerialized> mSerialization = new Dictionary<string, IEntitySerialized>();
-        private IDictionary<string, IEntityDeserialized> mDeserialization= new Dictionary<string, IEntityDeserialized>();
+        private IDictionary<string, IEntityDeserialized> mDeserialization = new Dictionary<string, IEntityDeserialized>();
         private FileStream mStream;
-
 
         public string PathToSavedFilesFolder { get; set; }
 
@@ -61,9 +61,20 @@ namespace SimplyCode.SFML.Games.Saving
 
         //TODO: Path to be controlled by settings. (So installation can be done).
         //TODO: A way to handle multiple arrangments (One save arrange = one file)
-        public static BinarySaveArrange Begin(string folderPath = "%temp%\\puzzler\\saved")
+        public static BinarySaveArrange Begin()
         {
-            var tempPath = Path.Combine(Path.GetTempPath(), "Puzzler", "saved");
+            var shortAssemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+
+            var tempPath = Path.Combine(Path.GetTempPath(), shortAssemblyName, "savedfiles");
+
+            if (!Directory.Exists(tempPath))
+            {
+                Directory.CreateDirectory(tempPath);
+            }
+            return new BinarySaveArrange() { PathToSavedFilesFolder = tempPath };
+        }
+        public static BinarySaveArrange Begin(string tempPath)
+        {
             if (!Directory.Exists(tempPath))
             {
                 Directory.CreateDirectory(tempPath);
@@ -80,7 +91,7 @@ namespace SimplyCode.SFML.Games.Saving
         public void Pack()
         {
             //TODO: Roll files and save metadata on saved files.
-            var fs = CreateOrGet(FileMode.Create);
+            using var fs = CreateOrGet(FileMode.Create);
 
             foreach (var item in mSerialization)
             {
@@ -88,14 +99,11 @@ namespace SimplyCode.SFML.Games.Saving
             }
 
             mSerialization.Clear();
-            fs.Close();
-            fs.Dispose();
-            fs = null;
         }
 
         public ILoadArrange Load<T>(string id) where T : IEntityDeserialized, new()
         {
-            var fs = CreateOrGet();
+            using var fs = CreateOrGet();
             var val = new T();
             val.DeserializeFrom(fs);
             mDeserialization.Add(id, val);
@@ -121,10 +129,7 @@ namespace SimplyCode.SFML.Games.Saving
             var unpacker = new UnpackedParameters(mDeserialization);
 
             mSerialization = null;
-            var fs = CreateOrGet();
-            fs.Close();
-            fs.Dispose();
-            fs = null;
+            using var fs = CreateOrGet();
 
             return unpacker;
         }
