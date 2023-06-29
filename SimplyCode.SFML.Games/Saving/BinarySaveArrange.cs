@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using SimplyCode.SFML.Games.Saving.DefaultSerializers;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -49,19 +51,26 @@ namespace SimplyCode.SFML.Games.Saving
     }
 
 
-    public class BinarySaveArrange : ISaveArrange, ILoadArrange
+    public class BinaryFileSaveLoadArrange : ISaveArrange, ILoadArrange, IDisposable
     {
-        private IDictionary<string, IEntitySerialized> mSerialization = new Dictionary<string, IEntitySerialized>();
-        private IDictionary<string, IEntityDeserialized> mDeserialization = new Dictionary<string, IEntityDeserialized>();
-        private FileStream mStream;
+        public const string Version = "1.0.0.0";
 
+        private IDictionary<string, IEntitySerialized> mSerialization = new Dictionary<string, IEntitySerialized>();
+        private readonly IDictionary<string, IEntityDeserialized> mDeserialization = new Dictionary<string, IEntityDeserialized>();
+        private FileStream mStream;
+        private static string VersionKeyName = "__Internal__Version";
         public string PathToSavedFilesFolder { get; set; }
 
-        private BinarySaveArrange() { }
+        public string SerializerVersion { get; set; }
+
+        private BinaryFileSaveLoadArrange(string version)
+        {
+            mSerialization.Add(VersionKeyName, new StringEntitySerialization() { Data = version });
+        }
 
         //TODO: Path to be controlled by settings. (So installation can be done).
         //TODO: A way to handle multiple arrangments (One save arrange = one file)
-        public static BinarySaveArrange Begin()
+        public static BinaryFileSaveLoadArrange Begin()
         {
             var shortAssemblyName = Assembly.GetExecutingAssembly().GetName().Name;
 
@@ -71,15 +80,15 @@ namespace SimplyCode.SFML.Games.Saving
             {
                 Directory.CreateDirectory(tempPath);
             }
-            return new BinarySaveArrange() { PathToSavedFilesFolder = tempPath };
+            return new BinaryFileSaveLoadArrange(Version) { PathToSavedFilesFolder = tempPath, SerializerVersion = Version };
         }
-        public static BinarySaveArrange Begin(string tempPath)
+        public static BinaryFileSaveLoadArrange Begin(string tempPath)
         {
             if (!Directory.Exists(tempPath))
             {
                 Directory.CreateDirectory(tempPath);
             }
-            return new BinarySaveArrange() { PathToSavedFilesFolder = tempPath };
+            return new BinaryFileSaveLoadArrange(Version) { PathToSavedFilesFolder = tempPath, SerializerVersion = Version };
         }
 
         public ISaveArrange Save<T>(T item, string id) where T : IEntitySerialized
@@ -129,9 +138,18 @@ namespace SimplyCode.SFML.Games.Saving
             var unpacker = new UnpackedParameters(mDeserialization);
 
             mSerialization = null;
-            using var fs = CreateOrGet();
 
             return unpacker;
+        }
+
+        public void Dispose()
+        {
+            if (mStream != null)
+            {
+                mStream.Dispose();
+                mStream.Close();
+                mStream = null;
+            }
         }
 
         private FileStream CreateOrGet(FileMode mode = FileMode.Open)
@@ -140,11 +158,35 @@ namespace SimplyCode.SFML.Games.Saving
             {
                 var fullPath = Path.Combine(PathToSavedFilesFolder, "x.savedData");
 
+                if (!File.Exists(fullPath))
+                {
+                    File.Create(fullPath).Close();
+                }
+
                 mStream = new FileStream(fullPath, mode);
+                if (mode != FileMode.Create && mode != FileMode.CreateNew)
+                {
+                    var versionDeserialize = new StringEntitySerialization();
+                    versionDeserialize.DeserializeFrom(mStream);
+                    mDeserialization.Add(VersionKeyName, versionDeserialize);
+                }
+
             }
             return mStream;
         }
 
+        public bool CanUnpack()
+        {
+            var fullPath = Path.Combine(PathToSavedFilesFolder, "x.savedData");
+            var doesExist = File.Exists(fullPath);
+            FileInfo info = new FileInfo(fullPath);
+            bool hasData = false;
 
+            if (doesExist)
+            {
+                hasData = info.Length > 0;
+            }
+            return doesExist && hasData;
+        }
     }
 }

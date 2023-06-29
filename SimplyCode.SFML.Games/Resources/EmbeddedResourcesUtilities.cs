@@ -17,7 +17,7 @@ namespace SimplyCode.SFML.Games.Resources
 
             var assembly = Assembly.GetExecutingAssembly();
 
-            using (Stream stream = assembly.GetManifestResourceStream($"SFML.Games.Resources.{resourceName}"))
+            using (Stream stream = assembly.GetManifestResourceStream($"SimplyCode.SFML.Games.Resources.{resourceName}"))
             {
                 return new Texture(stream);
             }

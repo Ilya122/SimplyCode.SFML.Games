@@ -23,7 +23,6 @@ namespace SimplyCode.SFML.Games.Scenes
         public abstract void Dispose();
         public abstract void Draw(RenderTarget target, RenderStates states);
         public abstract void Switched(SceneChangeState state);
-
         public abstract void Update(Time timeElapsed);
 
         protected void RaiseOnSceneChangeRequest(SceneChangeState state)

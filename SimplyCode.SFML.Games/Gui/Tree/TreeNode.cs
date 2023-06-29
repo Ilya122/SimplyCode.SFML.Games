@@ -35,6 +35,7 @@ namespace SimplyCode.SFML.Games.Gui.Tree
         public int Level { get; set; }
         public bool Expanded { get; set; }
         public bool Loaded { get; set; }
+        public bool Enabled { get; set; }
 
         public virtual void Draw(RenderTarget target, RenderStates states)
         {

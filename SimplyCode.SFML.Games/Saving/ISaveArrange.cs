@@ -11,11 +11,12 @@ namespace SimplyCode.SFML.Games.Saving
 
     public interface ILoadArrange
     {
-
         ILoadArrange Load<T>(string id) where T : IEntityDeserialized, new();
         ILoadArrange Load<T>(string id, params object[] ctorArguments) where T : IEntityDeserialized;
 
         IUnpackedParameters Unpack();
+        bool CanUnpack();
+
     }
 
     public interface IUnpackedParameters : IDisposable

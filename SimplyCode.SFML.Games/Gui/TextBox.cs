@@ -8,10 +8,12 @@ using System.Reflection.Emit;
 
 namespace SimplyCode.SFML.Games.Gui
 {
-    //TODO: Implement Bounding Box
+    // TODO: Implement Bounding Box
     // TODO: Implement Focus so it won't always write
+    // TODO: Validations and Regex? (Show green/red borders when valid/fail)
     public class TextBox : IGuiControl
     {
+        #region Privates 
         private Text mTextControl;
         private Text mLabel;
         private Sprite mCursor;
@@ -20,32 +22,16 @@ namespace SimplyCode.SFML.Games.Gui
         private Sprite mBoundingBox;
         private Window mParent;
 
-        //TODO: Make it to a static class.
-        private Dictionary<Keyboard.Key, string> mKeys;
+        private const int LineWidth = 2;
+        private const int CursorWidth = 3;
+        private readonly Vector2f BoundingBoxPositionDiff = new Vector2f(5, 5);
 
-        public TextBox(Window parent, Font font, uint fontSize, Vector2f position, Vector2u size, string labelToWriteOnEmtpy = "")
+        private static Dictionary<Keyboard.Key, string> mKeys;
+        #endregion
+
+        #region Ctor
+        static TextBox()
         {
-            mTextControl = new Text(string.Empty, font)
-            {
-                CharacterSize = fontSize,
-                FillColor = Color.Black,
-            };
-            mLabel = new Text(string.Empty, font)
-            {
-                CharacterSize = fontSize,
-                FillColor = Color.Black
-            };
-            var mCursorText = TextureFactory.CreateTexture(3, fontSize, Color.Black);
-            mCursor = new Sprite(mCursorText);
-
-            mParent = parent;
-            mTextControl.Position = position;
-            mLabel.Position = position;
-            mCursor.Position = position;
-
-            mParent.KeyPressed += KeyPressed;
-            mParent.MouseButtonPressed += MousePressed;
-
             mKeys = new Dictionary<Keyboard.Key, string>
             {
                 { Keyboard.Key.A , "A" },
@@ -111,13 +97,41 @@ namespace SimplyCode.SFML.Games.Gui
                 { Keyboard.Key.Numpad9 , "9" }
             };
 
-            var boundTexYSize = fontSize + (fontSize);
-
-            var boundTex = TextureFactory.CreateHollowTexture(size.X, boundTexYSize, Color.Black, 2);
-            mBoundingBox = new Sprite(boundTex);
-            mBoundingBox.Position = position - new Vector2f(5, 5);
         }
 
+        public TextBox(Window parent, Font font, uint fontSize, Vector2f position, Vector2u size, string labelToWriteOnEmtpy = "")
+        {
+            mTextControl = new Text(string.Empty, font)
+            {
+                CharacterSize = fontSize,
+                FillColor = Color.Black,
+            };
+            mLabel = new Text(string.Empty, font)
+            {
+                CharacterSize = fontSize,
+                FillColor = Color.Black
+            };
+
+            var mCursorText = TextureFactory.CreateTexture(CursorWidth, fontSize, Color.Black);
+            mCursor = new Sprite(mCursorText);
+
+            mParent = parent;
+            mTextControl.Position = position;
+            mLabel.Position = position;
+            mCursor.Position = position;
+
+            mParent.KeyPressed += KeyPressed;
+            mParent.MouseButtonPressed += MousePressed;
+
+            var boundTexYSize = fontSize + (fontSize);
+
+            var boundTex = TextureFactory.CreateHollowTexture(size.X, boundTexYSize, Color.Black, LineWidth);
+            mBoundingBox = new Sprite(boundTex);
+            mBoundingBox.Position = position - BoundingBoxPositionDiff;
+        }
+        #endregion
+
+        #region Properties
         public Vector2f Position
         {
             get { return mTextControl.Position; }
@@ -126,9 +140,9 @@ namespace SimplyCode.SFML.Games.Gui
 
         public FloatRect Bounds { get => mTextControl.GetGlobalBounds(); }
 
-
         public bool IsReadOnly { get; set; }
         public bool IsFocused { get; set; }
+        public bool Enabled { get; set; }
 
         public string Text
         {
@@ -140,20 +154,9 @@ namespace SimplyCode.SFML.Games.Gui
             }
         }
 
-        public void Dispose()
-        {
-            mTextControl.Dispose();
-            mTextControl = null;
-            mCursor.Dispose();
-            mCursor = null;
-            mLabel.Dispose();
-            mLabel = null;
-            mBoundingBox.Dispose();
-            mBoundingBox = null;
+        public int MaxCharacterSize { get; set; } = -1;
+        #endregion
 
-            mParent.KeyReleased -= KeyPressed;
-            mParent = null;
-        }
 
         public void Draw(RenderTarget target, RenderStates states)
         {
@@ -180,9 +183,11 @@ namespace SimplyCode.SFML.Games.Gui
         {
             var diff = oldPosition - newPosition;
             mTextControl.Position = newPosition;
-            mCursor.Position += diff;
-            mLabel.Position += diff;
-            mBoundingBox.Position += diff;
+            mCursor.Position = newPosition;
+            mLabel.Position = newPosition;
+            mBoundingBox.Position = newPosition - BoundingBoxPositionDiff;
+
+            SetCursorIndex(mTextControl.DisplayedString);
         }
 
         private void MousePressed(object sender, MouseButtonEventArgs e)
@@ -202,17 +207,13 @@ namespace SimplyCode.SFML.Games.Gui
                 return;
             }
 
-            var length = mTextControl.DisplayedString.Length == 0 ? 1 : mTextControl.DisplayedString.Length;
-            var letterSpacing = (int)(mTextControl.GetGlobalBounds().Width / length);
-
-
             if (mKeys.ContainsKey(e.Code))
             {
                 var str = mKeys[e.Code];
                 if (!e.Shift)
                 {
                     str = str.ToLower();
-                }
+                } 
                 else
                 {
                     //TODO: Map to dictionary properly with shift support and ctrl support to enable special characters.
@@ -222,7 +223,9 @@ namespace SimplyCode.SFML.Games.Gui
                     }
                 }
 
+
                 mTextControl.DisplayedString += str;
+
                 if (mCursorIndex < mTextControl.DisplayedString.Length - 1)
                 {
                     if (mCursorIndex < mTextControl.DisplayedString.Length - 1)
@@ -232,13 +235,13 @@ namespace SimplyCode.SFML.Games.Gui
                         mTextControl.DisplayedString = $"{firstHalf}{str}{second}";
                     }
                 }
-                IncrementCursorIndex(letterSpacing);
+                IncrementCursorIndex();
             }
             else if (e.Code == Keyboard.Key.Backspace && mTextControl.DisplayedString.Length > 0)
             {
                 var left = mTextControl.DisplayedString.Substring(0, mTextControl.DisplayedString.Length - 1);
                 mTextControl.DisplayedString = left;
-                DecreaseCursorIndex(letterSpacing);
+                DecreaseCursorIndex();
             }
             else if (e.Code == Keyboard.Key.Delete && mTextControl.DisplayedString.Length > 0)
             {
@@ -253,28 +256,31 @@ namespace SimplyCode.SFML.Games.Gui
             {
                 if (mCursorIndex <= mTextControl.DisplayedString.Length - 1)
                 {
-                    IncrementCursorIndex(letterSpacing);
+                    IncrementCursorIndex();
                 }
             }
             else if (e.Code == Keyboard.Key.Left)
             {
                 if (mCursorIndex > 0)
                 {
-                    DecreaseCursorIndex(letterSpacing);
+                    DecreaseCursorIndex();
                 }
             }
         }
 
-        private void IncrementCursorIndex(int letterSpacing)
+        private void IncrementCursorIndex()
         {
             ++mCursorIndex;
-            mCursor.Position = new Vector2f(mCursor.Position.X + letterSpacing, mCursor.Position.Y);
+            var pos = mTextControl.FindCharacterPos((uint)mCursorIndex);
+            mCursor.Position = new Vector2f(mTextControl.Position.X +  pos.X, mCursor.Position.Y);
         }
 
-        private void DecreaseCursorIndex(int letterSpacing)
+        private void DecreaseCursorIndex()
         {
             --mCursorIndex;
-            mCursor.Position = new Vector2f(mCursor.Position.X - letterSpacing, mCursor.Position.Y);
+            var pos = mTextControl.FindCharacterPos((uint)mCursorIndex);
+            mCursor.Position = new Vector2f(mTextControl.Position.X + pos.X, mCursor.Position.Y);
+
             if (mCursorIndex < 0)
             {
                 mCursorIndex = 0;
@@ -284,10 +290,28 @@ namespace SimplyCode.SFML.Games.Gui
         private void SetCursorIndex(string newString)
         {
             mCursorIndex = newString.Length - 1;
+            mCursorIndex = mCursorIndex < 0 ? 0 : mCursorIndex;
+
             var length = mTextControl.DisplayedString.Length == 0 ? 1 : mTextControl.DisplayedString.Length;
             var letterSpacing = (int)(mTextControl.GetGlobalBounds().Width / length);
 
             mCursor.Position = new Vector2f(mTextControl.Position.X + letterSpacing, mTextControl.Position.Y);
         }
+
+        public void Dispose()
+        {
+            mTextControl.Dispose();
+            mTextControl = null;
+            mCursor.Dispose();
+            mCursor = null;
+            mLabel.Dispose();
+            mLabel = null;
+            mBoundingBox.Dispose();
+            mBoundingBox = null;
+
+            mParent.KeyReleased -= KeyPressed;
+            mParent = null;
+        }
+
     }
 }

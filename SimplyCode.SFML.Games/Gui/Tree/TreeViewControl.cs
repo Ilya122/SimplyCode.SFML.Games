@@ -56,6 +56,7 @@ namespace SimplyCode.SFML.Games.Gui.Tree
 
         public FloatRect Bounds { get => mTreeBoundingBox.GetGlobalBounds(); }
 
+        public bool Enabled { get; set; }
 
         public virtual void Dispose()
         {

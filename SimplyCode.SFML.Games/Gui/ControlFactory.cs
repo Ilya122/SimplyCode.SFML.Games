@@ -54,7 +54,9 @@ namespace SimplyCode.SFML.Games.Gui
             var pos = new Vector2f(viewCenterX - singlePTextBounds.Width / 2, axiYMargin + singlePTextBounds.Height / 2);
 
             Vector2u controlSize = new Vector2u((uint)graphicText.GetLocalBounds().Width, charSize);
-            return new TextBox(parentWindow, font, charSize, pos, controlSize);
+            var tx=  new TextBox(parentWindow, font, charSize, pos, controlSize);
+            tx.Text = text;
+            return tx;
         }
 
         public static SpriteButton CreateSpriteButtonCentered(Window parentWindow, IGameResources resources, string textureID, int axiYMargin = 0)

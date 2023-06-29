@@ -17,5 +17,10 @@ namespace SimplyCode.SFML.Games.Gui
         /// Returns the size of the gui control on screen in pixels.
         /// </summary>
         FloatRect Bounds { get; }
+
+        /// <summary>
+        /// Determines if the GUI control is enabled to updates.
+        /// </summary>
+        bool Enabled { get; set; }
     }
 }

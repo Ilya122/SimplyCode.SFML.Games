@@ -30,6 +30,7 @@ namespace SimplyCode.SFML.Games.Gui
         private bool mDoneHovering;
         private DateTime mLastPressingTime = DateTime.Now;
 
+
         public BaseButton(Window parent)
         {
             mParent = parent;
@@ -37,11 +38,11 @@ namespace SimplyCode.SFML.Games.Gui
 
         public abstract Vector2f Position { get; set; }
         public abstract FloatRect Bounds { get; }
+        public bool Enabled { get; set; }
 
         // TODO: Think of better way to do behavior.
         public IControlBehavior HoverBehavior { get; set; }
         public IControlBehavior ReleaseBehavior { get; set; }
-
 
         public event Action OnPress;
 
@@ -108,7 +109,7 @@ namespace SimplyCode.SFML.Games.Gui
                 OnRelease?.Invoke();
             }
         }
-        
+
 
         protected virtual void DoOnHover()
         {

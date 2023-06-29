@@ -85,6 +85,8 @@ namespace SimplyCode.SFML.Games.Scene.Extensions
 
         public FloatRect Bounds => throw new NotImplementedException();
 
+        public bool Enabled { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
         public void Draw(RenderTarget target, RenderStates states)
         {
             if (string.IsNullOrEmpty(mFilePathText.DisplayedString))
