@@ -1,10 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>SimplyCode.SFML.Games</RootNamespace>
     <AssemblyName>SimplyCode.SFML.Games</AssemblyName>
     <Platforms>AnyCPU;x64</Platforms>
+
+    <PackageId>SimplyCode.SFML.Games</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>IlyaL</Authors>
+    <Company>SimplyCode</Company>
+    <Title>SimplyCode.SFML.Games</Title>
+    <Description>General classes for building 2D Games using SFML.Net</Description>
+    <PackageProjectUrl>https://github.com/Ilya122/SimplyCode.SFML.Games</PackageProjectUrl>
+    <PackageIcon>favicon2.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Ilya122/SimplyCode.SFML.Games</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +41,25 @@
   <ItemGroup>
     <None Update="Resources\ARIAL.TTF">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Networking\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\..\Articles\W - Graphics\favicon2.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 
